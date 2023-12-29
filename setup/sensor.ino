@@ -37,8 +37,14 @@ int water_height = 0;
 
 void loop()
 {
-  if (globals->reset == true)
+  if (digitalRead(INTERRUPT_PIN) == HIGH)
+  {
+    Serial.println("Resetting");
+    delay(3000);
+    reset();
     get_depth(NULL);
+  }
+  
   get_depth(&water_height);
   send(water_height);
 }

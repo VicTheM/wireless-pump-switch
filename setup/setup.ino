@@ -14,7 +14,7 @@
  */
 void _setup(int address)
 {
-  if (EEPROM.read(address) == 255)
+  if (EEPROM.read(address) == 255 || EEPROM.read(address) == 0)
   {
     Serial.println("First time power up");
     get_depth(NULL);
@@ -25,6 +25,10 @@ void _setup(int address)
     EEPROM.get(DEPTH_ADDRESS, globals->depth); // subsequent power up
   }
 }
+
+
+
+
 
 
 /**
@@ -46,6 +50,7 @@ bool get_depth(int *depth)
   avg = sum = 0;
   if (depth == NULL)
   {
+    static int arr[GLOB_SAMPLE_LEN];
     for (byte c = 0; c < GLOB_SAMPLE_LEN; c++)
     {
       digitalWrite(TRIG_PIN, HIGH);
@@ -53,10 +58,14 @@ bool get_depth(int *depth)
       digitalWrite(TRIG_PIN, LOW);
 
       // measure duration of pulse from ECHO pin
-      sum += pulseIn(ECHO_PIN, HIGH);
+      arr[c] = pulseIn(ECHO_PIN, HIGH);
     }
 
-    avg = (int)(sum / SAMPLE_LEN);
+    bubble_sort(arr, GLOB_SAMPLE_LEN);
+
+    for (byte c = 5; c < GLOB_SAMPLE_LEN - 5; c++)
+      sum += arr[c];
+    avg = (int)(sum / (GLOB_SAMPLE_LEN - 5 - 5));
 
     // convert the time to length in cm then write to eeprom
     globals->depth = 0.017 * avg;
@@ -66,6 +75,7 @@ bool get_depth(int *depth)
   }
   else
   {
+    sum = 0;
     for (byte c = 0; c < SAMPLE_LEN; c++)
     {
       digitalWrite(TRIG_PIN, HIGH);
@@ -82,6 +92,12 @@ bool get_depth(int *depth)
   }
 }
 
+
+
+
+
+
+
 /**
  * send - sends the data through the RF sender
  * @message: for now, we will use int
@@ -94,4 +110,49 @@ void send(int message)
   Serial.print("height of water is: ");
   Serial.println(message);
   delay(1000);
+}
+
+
+
+
+
+
+
+/**
+ * bubble_sort - some sort of inefficient sorting algo
+ * @arr: array to sort in ascending order
+ * @n: size of array
+ * We used this function to filter inaccurate
+ * readings from the ultrasonic sensor
+ */
+void bubble_sort(int* arr, int n)
+{
+  for (int i = 0; i < n-1; i++)
+  {
+    for (int j = 0; j < n-i-1; j++)
+    {
+      if (arr[j] > arr[j+1])
+      {
+        int temp = arr[j];
+        arr[j] = arr[j+1];
+        arr[j+1] = temp;
+      }
+    }
+  }
+}
+
+
+
+
+
+/**
+ * isr - Interrupt Service Routine
+ * Used to reset the constant tank depth stored in eeprom
+ */
+void reset()
+{
+  // This function will be called when the interrupt is triggered (RESET BUTTON)
+  Serial.println();
+  Serial.println("Re-evaluating Tank Capacity...");
+  globals->reset = true;
 }

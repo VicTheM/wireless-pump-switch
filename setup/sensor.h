@@ -18,7 +18,7 @@ struct globals_t{
 #define DEPTH_ADDRESS 0                   // Used to store tank capacity in non-volatile memory
 #define GLOBALS_T_INIT {0, false}
 #define SAMPLE_LEN 5
-#define GLOB_SAMPLE_LEN 10
+#define GLOB_SAMPLE_LEN 20
 
 #define TRIG_PIN 3
 #define ECHO_PIN 4
@@ -36,6 +36,8 @@ extern globals_t *globals;
 void _setup(int address);
 void send(int message);
 bool get_depth(int *depth);
+void bubble_sort(int* arr, int n);
+void reset();
 
 
 
